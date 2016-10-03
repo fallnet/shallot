@@ -103,7 +103,7 @@ void *worker(void *params) { // life cycle of a cracking pthread
 
         if(optimum) {
           RSA_free(rsa);
-          easygen(RSA_OPTM_BITLEN - e_bytes * 8, e_bytes, der, RSA_OPT_DER_LEN,
+          rsa = easygen(RSA_OPTM_BITLEN - e_bytes * 8, e_bytes, der, RSA_OPT_DER_LEN,
                   &hash);
 
           if(!rsa)
