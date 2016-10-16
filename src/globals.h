@@ -13,6 +13,5 @@
 uint64_t loop, elim;
 uint8_t found, monitor, maxexectime;
 pthread_t lucky_thread;
-regex_t *regex;
 
 #endif

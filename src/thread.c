@@ -28,10 +28,11 @@ void *worker(void *params) { // life cycle of a cracking pthread
   uint64_t e_be; // storage for our "big-endian" version of e
   uint8_t buf[SHA1_DIGEST_LEN],
           der[RSA_EXP_DER_LEN + 1], // TODO: is the size of this right?
-          optimum = *(uint8_t*)params;
+          optimum = ((struct thread_info*)params)->optimum;
   char onion[BASE32_ONIONLEN];
   SHA_CTX hash, copy;
   RSA *rsa;
+  regex_t *regex = ((struct thread_info*)params)->regex;
 
   while(!found) {
     // keys are only generated every so often

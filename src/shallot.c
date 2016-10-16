@@ -59,6 +59,13 @@ void terminate(int signum) { // Ctrl-C/kill handler
   error(X_SGNL_INT_TERM);
 }
 
+static struct regex_t* mk_regex(const char* pattern) {
+	struct regex_t *regex = malloc(REGEX_COMP_LMAX);
+	if(regcomp((void*)regex, pattern, REG_EXTENDED | REG_NOSUB))
+		error(X_REGEX_COMPILE);
+	return regex;
+}
+
 int main(int argc, char *argv[]) { // onions are fun, here we go
   signal(SIGTERM, terminate); // always let people kill
 
@@ -223,11 +230,6 @@ int main(int argc, char *argv[]) { // onions are fun, here we go
   if(*pattern == '-')
     error(X_REGEX_INVALID);
 
-  regex = malloc(REGEX_COMP_LMAX);
-
-  if(regcomp(regex, pattern, REG_EXTENDED | REG_NOSUB))
-    error(X_REGEX_COMPILE);
-
   if(file) {
     umask(077); // remove permissions to be safe
 
@@ -270,8 +272,10 @@ int main(int argc, char *argv[]) { // onions are fun, here we go
 
   // create our threads for 2+ cores
   for(x = 1; x < threads; x++) {
-
-    if(pthread_create(&thrd, NULL, worker, &optimum))
+    struct thread_info* ti = malloc(sizeof(struct thread_info));
+    ti->optimum = optimum;
+    ti->regex = mk_regex(pattern);
+    if(pthread_create(&thrd, NULL, worker, ti))
       error(X_THREAD_CREATE);
   }
 
@@ -281,13 +285,17 @@ int main(int argc, char *argv[]) { // onions are fun, here we go
       error(X_THREAD_CREATE);
   }
 
-  worker(&optimum); // use main thread for brute-forcing too
+{
+    struct thread_info* ti = malloc(sizeof(struct thread_info));
+    ti->optimum = optimum;
+    ti->regex =  mk_regex(pattern);
 
+  worker(ti); // use main thread for brute-forcing too
+}
   if(pthread_self() != lucky_thread) { // be safe and avoid EDEADLK
 
     pthread_join(lucky_thread, NULL); // wait for the lucky thread to exit
   }
 
-  regfree(regex);
   return 0;
 }
